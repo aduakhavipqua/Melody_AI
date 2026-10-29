@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>MelodyFind AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="frame">
+    <header class="topbar">
+      <div class="brand"><span class="logo" aria-hidden="true">♪</span>MelodyFind AI</div>
+      <nav class="nav" aria-label="Điều hướng">
+        <span>Khám phá</span><span aria-current="page">Tìm kiếm</span><span>Thư viện</span><span>Lịch sử</span>
+      </nav>
+      <span class="status" id="status"><i></i><span id="statusText">Đang kiểm tra kết nối...</span></span>
+    </header>
+
+    <div class="layout">
+      <section class="col" aria-label="Nhận diện bài hát">
+        <h1>Nhận diện bài hát bằng giọng nói, giai điệu hoặc lời</h1>
+
+        <div class="modes" role="group" aria-label="Chế độ tìm kiếm">
+          <button class="mode" type="button" data-mode="say" aria-pressed="false">Nói tên bài hát</button>
+          <button class="mode" type="button" data-mode="hum" aria-pressed="true">Ngân nga giai điệu</button>
+          <button class="mode" type="button" data-mode="lyrics" aria-pressed="false">Nhớ lời bài hát</button>
+        </div>
+
+        <div class="recorder">
+          <button class="mic" id="micBtn" type="button" aria-label="Bắt đầu ghi âm">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Z"/><path d="M5.5 10.5a1 1 0 0 1 2 0V11a4.5 4.5 0 0 0 9 0v-.5a1 1 0 0 1 2 0V11a6.5 6.5 0 0 1-5.5 6.42V20h2a1 1 0 0 1 0 2h-6a1 1 0 0 1 0-2h2v-2.58A6.5 6.5 0 0 1 5.5 11v-.5Z"/></svg>
+          </button>
+          <canvas id="wave" role="img" aria-label="Dạng sóng âm thanh"></canvas>
+          <div class="clock" id="clock"><i></i><span class="num" id="clockText">00:07</span></div>
+          <button class="stop" id="stopBtn" type="button">Ghi âm</button>
+        </div>
+
+        <div class="alt">
+          <button class="ghost" id="uploadBtn" type="button">Tải file âm thanh</button>
+          <button class="ghost" id="sampleBtn" type="button">Dùng giọng ngân nga mẫu</button>
+          <input id="fileInput" type="file" accept="audio/*" hidden>
+          <p id="notice" role="status" aria-live="polite"></p>
+        </div>
+
+        <div class="facts">
+          <div class="fact">Chế độ: <b id="factMode">Ngân nga (hum)</b></div>
+          <div class="fact">Âm thanh: <b id="factAudio">7.2 s · 16 kHz · mono</b></div>
+          <div class="fact">Tín hiệu: <b id="factSignals">audio + melody + lyrics</b></div>
+        </div>
+
+        <section class="panel" aria-label="Quy trình AI">
+          <div class="panel-head">
+            <span class="eyebrow"><b>Quy trình AI</b> · 7 bước xử lý</span>
+            <span class="hint">Truy vấn → vector → Top-K</span>
+          </div>
+          <ol class="steps" id="steps"></ol>
+        </section>
+
+        <div class="results-head">
+          <h2>Bài hát khớp nhất</h2>
+          <span class="badge" id="badge" data-kind="sample">Kết quả</span>
+        </div>
+        <div id="list" aria-live="polite"></div>
+      </section>
+
+      <aside class="col" aria-label="Phân tích điểm">
+        <section class="panel" aria-label="Trọng số hợp nhất">
+          <div class="panel-head"><span class="eyebrow"><b>Fusion layer</b> · trọng số hợp nhất</span></div>
+          <div class="fusion">
+            <div class="donut">
+              <svg viewBox="0 0 200 200" role="img" aria-label="Trọng số hợp nhất" id="donut"></svg>
+              <div class="centre"><b>Σ = 1.0</b><small>tổng trọng số</small></div>
+            </div>
+            <div class="legend">
+              <div class="leg"><i style="background:var(--cyan)"></i><strong>Audio</strong><b style="color:var(--cyan)">40%</b><small>MFCC / Mel</small></div>
+              <div class="leg"><i style="background:var(--pink)"></i><strong>Melody</strong><b style="color:var(--pink)">30%</b><small>Pitch / Chroma</small></div>
+              <div class="leg"><i style="background:var(--violet)"></i><strong>Lyrics</strong><b style="color:var(--violet)">30%</b><small>STT → NLP</small></div>
+            </div>
+            <div class="formula">Match = 0.4·S_audio + 0.3·S_melody + 0.3·S_lyrics</div>
+          </div>
+        </section>
+
+        <section class="panel fill" aria-label="Điểm ứng viên">
+          <div class="panel-head"><span class="eyebrow"><b>Retrieval</b> · điểm ứng viên (Top-10)</span></div>
+          <div class="chartbox"><svg id="chart" role="img" aria-label="Điểm match của 10 ứng viên"></svg></div>
+        </section>
+      </aside>
+    </div>
+
+    <p class="foot" id="foot">Hệ thống đang kết nối trực tiếp tới Backend API để nhận diện bài hát thực tế.</p>
+  </main>
+
+  <script src="/static/main.js"></script>
+</body>
+</html>
