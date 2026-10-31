@@ -6,5 +6,3 @@ numpy>=1.24
 scipy>=1.10
 onnxruntime>=1.17     # nếu model đã xuất là .onnx
 # torch>=2.2          # bỏ comment nếu model đã xuất là TorchScript (.pt)
-joblib
-scikit-learn

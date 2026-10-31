@@ -1,0 +1,78 @@
+
+name: Melody_AI CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+  pull_request:
+    branches: [main]
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  CI:
+    name: Test and Docker Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Check Python Syntax
+        run: |
+          python -m compileall -q \
+            server.py \
+            model_adapter.py \
+            main.py \
+            train_model.py
+
+      - name: Run Unit Tests
+        run: |
+          if [ -d tests ]; then
+            pytest -v tests/
+          else
+            echo "No tests directory. Skipping pytest."
+          fi
+
+      - name: Build Docker Image
+        run: |
+          docker build -t melody-ai:${{ github.sha }} .
+
+  CD:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: CI
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Trigger Render Deployment
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+
+        run: |
+          if [ -z "$DEPLOY_HOOK_URL" ]; then
+            echo "Missing Render Deploy Hook"
+            exit 1
+          fi
+
+          curl --fail --show-error --silent \
+            --request POST \
+            "$DEPLOY_HOOK_URL"
+
+          echo "Render deployment request accepted!"
